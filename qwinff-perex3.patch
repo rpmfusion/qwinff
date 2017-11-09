@@ -1,0 +1,50 @@
+From 615e5e347c8ba67562fdf939ec2bf2e9f2a835bb Mon Sep 17 00:00:00 2001
+From: Jaroslav Kysela <perex@perex.cz>
+Date: Tue, 7 Nov 2017 16:23:03 +0100
+Subject: [PATCH] presets: add some MKV examples
+
+---
+ src/presets.xml | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/src/presets.xml b/src/presets.xml
+index 2683de7..127d69a 100644
+--- a/src/presets.xml
++++ b/src/presets.xml
+@@ -1,6 +1,36 @@
+ <?xml version="1.0"?>
+ <presets>
+ 
++  <!-- Matroska -->
++  <MKVCopy>
++    <label>MKV Copy (cutting)</label>
++    <globals>-strict strict</globals>
++    <params>-map 0 -vcodec copy -acodec copy -scodec copy</params>
++    <extension>mkv</extension>
++    <category>Matroska</category>
++  </MKVCopy>
++  <MKVWideLR264>
++    <label>MKV H.264 Widescreen 896x504</label>
++    <globals>-strict strict</globals>
++    <params>-map 0 -q:v 2 -c:v libx264 -preset slow -s 896:504 -c:a copy -scodec copy</params>
++    <extension>mkv</extension>
++    <category>Matroska</category>
++  </MKVWideLR264>
++  <MKVWideHD264>
++    <label>MKV H.264 Widescreen 1280x720</label>
++    <globals>-strict strict</globals>
++    <params>-map 0 -q:v 2 -c:v libx264 -preset slow -s 1280:720 -c:a copy -scodec copy</params>
++    <extension>mkv</extension>
++    <category>Matroska</category>
++  </MKVWideHD264>
++  <MKVWideFHD264>
++    <label>MKV H.264 Widescreen 1920x1080</label>
++    <globals>-strict strict</globals>
++    <params>-map 0 -q:v 2 -c:v libx264 -preset slow -s 1920:1080 -c:a copy -scodec copy</params>
++    <extension>mkv</extension>
++    <category>Matroska</category>
++  </MKVWideFHD264>
++
+   <!-- MPEG4 -->
+   <MPEG4Auto>
+     <label>MPEG-4 Auto</label>

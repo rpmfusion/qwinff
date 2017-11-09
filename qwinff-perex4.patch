@@ -1,0 +1,38 @@
+From e094fc61a09b8378ebea8a81d8d45976b41022de Mon Sep 17 00:00:00 2001
+From: Jaroslav Kysela <perex@perex.cz>
+Date: Tue, 7 Nov 2017 17:06:24 +0100
+Subject: [PATCH] config path: use the default Qt location for .ini file (in
+ /home/perex/.config/qwinff directory)
+
+---
+ src/main.cpp | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/src/main.cpp b/src/main.cpp
+index 5b704f0..363023c 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -154,20 +154,15 @@ int main(int argc, char *argv[])
+ 
+     // Register QSettings information.
+     app.setOrganizationName("qwinff");
++    QSettings::setDefaultFormat(QSettings::IniFormat);
+     if (Constants::getBool("Portable")) {
+         // Portable App: Save settings in <exepath>/qwinff.ini.
+-        QSettings::setDefaultFormat(QSettings::IniFormat);
+         QSettings::setPath(QSettings::IniFormat, QSettings::UserScope
+                            , app.applicationDirPath());
+-        qDebug() << "Setting path: " + app.applicationDirPath();
+     } else {
+-        // Save settings in <home>/.qwinff/qwinff.ini
+-        QString settings_dir = QDir(QDir::homePath()).absoluteFilePath(".qwinff");
+-        QDir().mkpath(settings_dir);
+-        QSettings::setDefaultFormat(QSettings::IniFormat);
+-        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settings_dir);
+-        qDebug() << "Setting path: " + settings_dir;
++        // Save settings to the default Qt location
+     }
++    qDebug() << "Settings filename: " + QSettings().fileName();
+ 
+     Paths::setAppPath(app.applicationDirPath());
+ 
