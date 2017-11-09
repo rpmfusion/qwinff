@@ -1,0 +1,27 @@
+diff --git a/Makefile b/Makefile
+index 4e6a779..c75df11 100644
+--- a/Makefile
++++ b/Makefile
+@@ -29,6 +29,13 @@ QMAKE_DEFS= DESTDIR=$(BIN_DIR) \
+             RCC_DIR=$(BUILD_DIR)/rcc \
+             UI_DIR=$(BUILD_DIR)/ui \
+             DEFINES+=QT_NO_DEBUG_OUTPUT
++QMAKE_EXTRA_DEFS= QMAKE_CFLAGS_DEBUG="$(QMAKE_CFLAGS_DEBUG)" \
++		  QMAKE_CFLAGS_RELEASE="$(QMAKE_CFLAGS_RELEASE)" \
++		  QMAKE_CXXFLAGS_DEBUG="$(QMAKE_CXXFLAGS_DEBUG)" \
++		  QMAKE_CXXFLAGS_RELEASE="$(QMAKE_CXXFLAGS_RELEASE)" \
++		  QMAKE_LFLAGS_DEBUG="$(QMAKE_LFLAGS_DEBUG)" \
++		  QMAKE_LFLAGS_RELEASE="$(QMAKE_LFLAGS_RELEASE)" \
++		  QMAKE_STRIP="$(QMAKE_STRIP)"
+ 
+ DEFS= DATA_PATH=\\\"$(DATA_PATH)\\\" \
+       VERSION_ID_STRING=\\\"$(VIDSTR)\\\"
+@@ -42,7 +49,7 @@ endif
+ all: release
+ 
+ release:
+-	+cd $(SRC_DIR) && $(QMAKE) $(QMAKE_DEFS) qwinff.pro && $(DEFS) $(MAKE)
++	+cd $(SRC_DIR) && $(QMAKE) $(QMAKE_DEFS) $(QMAKE_EXTRA_DEFS) qwinff.pro && $(DEFS) $(MAKE)
+ 	-cd src && $(LRELEASE) qwinff.pro
+ 
+ check:

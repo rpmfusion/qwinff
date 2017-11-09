@@ -1,0 +1,79 @@
+From 4d6f6c2c349bcd00bbdbf7cb0f51c9ba22eb044b Mon Sep 17 00:00:00 2001
+From: Jaroslav Kysela <perex@perex.cz>
+Date: Tue, 7 Nov 2017 12:43:21 +0100
+Subject: [PATCH 1/2] presets: new ffmpeg can identify codecs using -c:a or
+ -codec:a argument, fix removeUnavailablePresets()
+
+---
+ src/converter/presets.cpp | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/converter/presets.cpp b/src/converter/presets.cpp
+index 8449b61..545b4ef 100644
+--- a/src/converter/presets.cpp
++++ b/src/converter/presets.cpp
+@@ -154,9 +154,9 @@ void Presets::Private::removeUnavailablePresets()
+     if (!FFmpegInterface::getSubtitleEncoders(subtitle_encoders))
+         Q_ASSERT(subtitle_encoders.isEmpty());
+ 
+-    QRegExp audio_codec_pattern("-acodec\\s+([^ ]+)");
+-    QRegExp video_codec_pattern("-vcodec\\s+([^ ]+)");
+-    QRegExp subtitle_codec_pattern("-scodec\\s+([^ ]+)");
++    QRegExp audio_codec_pattern("-(c:a|codec:a|acodec)\\s+([^ ]+)");
++    QRegExp video_codec_pattern("-(c:v|codec:v|vcodec)\\s+([^ ]+)");
++    QRegExp subtitle_codec_pattern("-(c:s|codec:s|scodec)\\s+([^ ]+)");
+ 
+     QMultiMap<QString, Preset>::iterator it = presets.begin();
+     while (it!=presets.end()) {
+@@ -165,21 +165,21 @@ void Presets::Private::removeUnavailablePresets()
+ 
+         // Check unavailable audio presets
+         if (audio_codec_pattern.indexIn(params) != -1) {
+-            if (!audio_encoders.contains(audio_codec_pattern.cap(1))) {
++            if (!audio_encoders.contains(audio_codec_pattern.cap(2))) {
+                 remove = true;
+             }
+         }
+ 
+         // Check unavailable video presets
+         if (!remove && video_codec_pattern.indexIn(params) != -1) {
+-            if (!video_encoders.contains(video_codec_pattern.cap(1))) {
++            if (!video_encoders.contains(video_codec_pattern.cap(2))) {
+                 remove = true;
+             }
+         }
+ 
+         // Check unavailable subtitle presets
+         if (!remove && subtitle_codec_pattern.indexIn(params) != -1) {
+-            if (!subtitle_encoders.contains(subtitle_codec_pattern.cap(1))) {
++            if (!subtitle_encoders.contains(subtitle_codec_pattern.cap(2))) {
+                 remove = true;
+             }
+         }
+
+From 4837d6dbb5da1a9da83717fe283d8ad69637521d Mon Sep 17 00:00:00 2001
+From: Jaroslav Kysela <perex@perex.cz>
+Date: Tue, 7 Nov 2017 13:40:48 +0100
+Subject: [PATCH 2/2] ffmpeg interface: always add 'copy' codecs
+
+- they are not printed by ffmpeg
+- presets.xml might use them (only cutting) and we don't want
+  to filter them out (removeUnavailablePresets)
+---
+ src/converter/ffmpeginterface.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/converter/ffmpeginterface.cpp b/src/converter/ffmpeginterface.cpp
+index 632a1ef..f255aff 100644
+--- a/src/converter/ffmpeginterface.cpp
++++ b/src/converter/ffmpeginterface.cpp
+@@ -130,6 +130,9 @@ namespace inner {
+         const int CODEC_DESC = 3;
+ 
+         ffmpeg_codec_info.clear();
++        audio_encoders.push_back("copy");
++        video_encoders.push_back("copy");
++        subtitle_encoders.push_back("copy");
+         while (ffmpeg_process.canReadLine()) {
+             QString line(ffmpeg_process.readLine());
+             ffmpeg_codec_info.append(line);

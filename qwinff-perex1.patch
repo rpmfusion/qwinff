@@ -1,0 +1,203 @@
+From 58fd3c100883b123d7ba255ac62a36e2be1eea6d Mon Sep 17 00:00:00 2001
+From: Jaroslav Kysela <perex@perex.cz>
+Date: Tue, 7 Nov 2017 13:36:32 +0100
+Subject: [PATCH 1/2] add extra FFMPEG global options support to both
+ presets.xml and GUI
+
+The '-strict strict' or '-cpuflags -sse+mmx' parameters can be used
+globally. Add support for this.
+---
+ src/converter/conversionparameters.cpp |  7 ++++---
+ src/converter/conversionparameters.h   |  5 +++--
+ src/converter/ffmpeginterface.cpp      |  2 ++
+ src/converter/presets.cpp              |  6 ++++++
+ src/converter/presets.h                |  1 +
+ src/ui/addtaskwizard.cpp               |  2 +-
+ src/ui/conversionparameterdialog.cpp   |  4 +++-
+ src/ui/conversionparameterdialog.ui    | 14 ++++++++++++++
+ 8 files changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/src/converter/conversionparameters.cpp b/src/converter/conversionparameters.cpp
+index 8a44f6e..ee07e0c 100644
+--- a/src/converter/conversionparameters.cpp
++++ b/src/converter/conversionparameters.cpp
+@@ -132,7 +132,7 @@ void ConversionParameters::copyConfigurationFrom(const ConversionParameters &src
+ }
+ 
+ ConversionParameters
+-ConversionParameters::fromFFmpegParameters(const QString &params_str)
++ConversionParameters::fromFFmpegParameters(const QString &globals_str, const QString &params_str)
+ {
+     ConversionParameters result;
+     QStringList args = params_str.split(" ", QString::SkipEmptyParts);
+@@ -148,13 +148,14 @@ ConversionParameters::fromFFmpegParameters(const QString &params_str)
+         }
+     }
+ 
++    result.ffmpeg_globals = globals_str;
+     result.ffmpeg_options = args.join(" "); // unrecognized arguments
+ 
+     return result;
+ }
+ 
+ ConversionParameters
+-ConversionParameters::fromFFmpegParameters(const char *params_str)
++ConversionParameters::fromFFmpegParameters(const char *globals_str, const char *params_str)
+ {
+-    return fromFFmpegParameters(QString(params_str));
++    return fromFFmpegParameters(QString(globals_str), QString(params_str));
+ }
+diff --git a/src/converter/conversionparameters.h b/src/converter/conversionparameters.h
+index 3cd0b5b..b7d2206 100644
+--- a/src/converter/conversionparameters.h
++++ b/src/converter/conversionparameters.h
+@@ -51,6 +51,7 @@ class ConversionParameters
+     /* FFmpeg Specific Options */
+     /*! Additional options passed to the ffmpeg transcoder.
+         These options will be overriden by other specific options. */
++    QString ffmpeg_globals;
+     QString ffmpeg_options;
+ 
+     /* MEncoder Specific Options */
+@@ -77,8 +78,8 @@ class ConversionParameters
+ 
+     /*! Generate a ConversionParameters from ffmpeg command line options.
+         This function ignores input and output file options. */
+-    static ConversionParameters fromFFmpegParameters(const QString& params_str);
+-    static ConversionParameters fromFFmpegParameters(const char *params_str);
++    static ConversionParameters fromFFmpegParameters(const QString& globals_str, const QString& params_str);
++    static ConversionParameters fromFFmpegParameters(const char *globals_str, const char *params_str);
+ 
+     ConversionParameters()
+         : threads(0),
+diff --git a/src/converter/ffmpeginterface.cpp b/src/converter/ffmpeginterface.cpp
+index 632a1ef..724573e 100644
+--- a/src/converter/ffmpeginterface.cpp
++++ b/src/converter/ffmpeginterface.cpp
+@@ -361,6 +361,8 @@ QStringList FFmpegInterface::Private::getOptionList(const ConversionParameters &
+     // overwrite if file exists
+     list.append("-y");
+ 
++    list.append(o.ffmpeg_globals);
++
+     if (!bNeedsAudioFilter) {
+         /* in this configuration, input is read from file
+            arguments: -i <infile>
+diff --git a/src/converter/presets.cpp b/src/converter/presets.cpp
+index 8449b61..66a8603 100644
+--- a/src/converter/presets.cpp
++++ b/src/converter/presets.cpp
+@@ -128,6 +128,12 @@ bool Presets::Private::readElementData(QXmlStreamReader &xml, Preset& target)
+ 
+     if (property_name == "label") {
+         target.label = property_value;
++    } else if (property_name == "globals") {
++        Version ffmpegVersion(FFmpegInterface::getFFmpegVersionInfo());
++        if (versionrange_str.isEmpty()
++                || VersionRange(versionrange_str).containsVersion(ffmpegVersion)) {
++            target.globals = property_value;
++        }
+     } else if (property_name == "params") {
+         Version ffmpegVersion(FFmpegInterface::getFFmpegVersionInfo());
+         if (versionrange_str.isEmpty()
+diff --git a/src/converter/presets.h b/src/converter/presets.h
+index 4b8c488..02b12d1 100644
+--- a/src/converter/presets.h
++++ b/src/converter/presets.h
+@@ -28,6 +28,7 @@ class Preset
+     QString extension;
+     QString label;
+     QString category;
++    QString globals;
+     QString parameters;
+ 
+     /*! Sorting requires less-than operator.
+diff --git a/src/ui/addtaskwizard.cpp b/src/ui/addtaskwizard.cpp
+index d683093..b50f3ba 100644
+--- a/src/ui/addtaskwizard.cpp
++++ b/src/ui/addtaskwizard.cpp
+@@ -256,7 +256,7 @@ void AddTaskWizard::slotPresetSelected(int index)
+     if (!m_presets->findPresetById(id, preset)) {
+         return; // assert false
+     }
+-    *m_current_param = ConversionParameters::fromFFmpegParameters(preset.parameters);
++    *m_current_param = ConversionParameters::fromFFmpegParameters(preset.globals, preset.parameters);
+ }
+ 
+ // This function is executed when the users presses "Finish"
+diff --git a/src/ui/conversionparameterdialog.cpp b/src/ui/conversionparameterdialog.cpp
+index 0b0e292..3537c82 100644
+--- a/src/ui/conversionparameterdialog.cpp
++++ b/src/ui/conversionparameterdialog.cpp
+@@ -130,6 +130,7 @@ AbstractPreviewer *ConversionParameterDialog::create_previewer()
+ void ConversionParameterDialog::read_fields(const ConversionParameters& param)
+ {
+     // Additional Options
++    ui->txtFFmpegGlobals->setPlainText(param.ffmpeg_globals);
+     ui->txtFFmpegOptions->setPlainText(param.ffmpeg_options);
+ 
+     // Audio Options
+@@ -213,7 +214,8 @@ void ConversionParameterDialog::read_fields(const ConversionParameters& param)
+ void ConversionParameterDialog::write_fields(ConversionParameters& param)
+ {
+     // Additional Options
+-    param = param.fromFFmpegParameters(ui->txtFFmpegOptions->toPlainText());
++    param = param.fromFFmpegParameters(ui->txtFFmpegGlobals->toPlainText(),
++                                       ui->txtFFmpegOptions->toPlainText());
+ 
+     // Audio Options
+     param.disable_audio = ui->chkDisableAudio->isChecked();
+diff --git a/src/ui/conversionparameterdialog.ui b/src/ui/conversionparameterdialog.ui
+index 6432268..1f73f4f 100644
+--- a/src/ui/conversionparameterdialog.ui
++++ b/src/ui/conversionparameterdialog.ui
+@@ -520,6 +520,20 @@
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_5">
+             <item>
++             <layout class="QVBoxLayout" name="verticalLayout_10">
++              <item>
++               <widget class="QLabel" name="lblFFmpegGlobals">
++                <property name="text">
++                 <string>Additional FFmpeg Global Options</string>
++                </property>
++               </widget>
++              </item>
++              <item>
++               <widget class="QPlainTextEdit" name="txtFFmpegGlobals"/>
++              </item>
++             </layout>
++            </item>
++            <item>
+              <layout class="QVBoxLayout" name="verticalLayout_4">
+               <item>
+                <widget class="QLabel" name="lblFFmpegOptions">
+
+From 1f236ce3997bcaf94285ccd7ba738a31d9193e91 Mon Sep 17 00:00:00 2001
+From: Jaroslav Kysela <perex@perex.cz>
+Date: Tue, 7 Nov 2017 15:53:48 +0100
+Subject: [PATCH 2/2] ffmpeg interface: fix the global options passing
+
+---
+ src/converter/ffmpeginterface.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/converter/ffmpeginterface.cpp b/src/converter/ffmpeginterface.cpp
+index 724573e..4bdada2 100644
+--- a/src/converter/ffmpeginterface.cpp
++++ b/src/converter/ffmpeginterface.cpp
+@@ -361,7 +361,13 @@ QStringList FFmpegInterface::Private::getOptionList(const ConversionParameters &
+     // overwrite if file exists
+     list.append("-y");
+ 
+-    list.append(o.ffmpeg_globals);
++    /* ==== Additional Global Options ==== */
++    if (!o.ffmpeg_globals.isEmpty()) {
++        QList<QString> additional_globals =
++                o.ffmpeg_globals.split(" ", QString::SkipEmptyParts);
++        foreach (QString opt, additional_globals)
++            list.append(opt);
++    }
+ 
+     if (!bNeedsAudioFilter) {
+         /* in this configuration, input is read from file
