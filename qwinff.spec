@@ -9,7 +9,7 @@
 Summary:        An intuitive media converter GUI for ffmpeg
 Name:           qwinff
 Version:        0.2.2
-Release:        0.3%{?gver}%{?dist}
+Release:        0.4%{?gver}%{?dist}
 License:        GPLv3
 URL:            http://qwinff.github.io/
 Source:         https://github.com/qwinff/%{name}/archive/v%{p1version}/%{name}-%{p1version}.tar.gz
@@ -64,6 +64,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/qwinff.desktop
 %{_mandir}/man1/qwinff.1.*
 
 %changelog
+* Sun Aug 19 2018 Leigh Scott <leigh123linux@googlemail.com> - 0.2.2-0.4.20171107git3420e8e
+- Rebuilt for Fedora 29 Mass Rebuild binutils issue
+
 * Fri Jul 27 2018 RPM Fusion Release Engineering <leigh123linux@gmail.com> - 0.2.2-0.3.20171107git3420e8e
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
