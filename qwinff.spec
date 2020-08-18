@@ -19,7 +19,8 @@ Patch3:         https://github.com/qwinff/%{name}/pull/21.patch#/qwinff-perex1.p
 Patch4:         https://github.com/qwinff/%{name}/pull/22.patch#/qwinff-perex2.patch
 Patch5:         https://github.com/qwinff/%{name}/pull/23.patch#/qwinff-perex3.patch
 Patch6:         https://github.com/qwinff/%{name}/pull/24.patch#/qwinff-perex4.patch
-BuildRequires:  qt5-devel
+BuildRequires:  qt5-qtbase-devel
+BuildRequires:  qt5-linguist
 #BuildRequires:  gtk2-devel
 BuildRequires:  pkgconfig(libnotify)
 BuildRequires:  desktop-file-utils
