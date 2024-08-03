@@ -37,12 +37,12 @@ while advanced users can still adjust conversion parameters in detail.
 
 %prep
 %setup -q -n %{name}-%{p1version}
-%patch1 -p1 -b .post
-%patch2 -p1 -b .extradefs
-%patch3 -p1 -b .perex1
-%patch4 -p1 -b .perex2
-%patch5 -p1 -b .perex3
-%patch6 -p1 -b .perex4
+%patch -P1 -p1 -b .post
+%patch -P2 -p1 -b .extradefs
+%patch -P3 -p1 -b .perex1
+%patch -P4 -p1 -b .perex2
+%patch -P5 -p1 -b .perex3
+%patch -P6 -p1 -b .perex4
 
 %build
 %make_build QMAKE=qmake-qt5 %{?_qt5_qmake_flags} \
